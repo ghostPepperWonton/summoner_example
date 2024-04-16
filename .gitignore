@@ -24,3 +24,8 @@ example-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# Ignore env var files
+.envrc
+.env
+.env.*

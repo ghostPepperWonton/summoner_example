@@ -35,7 +35,10 @@ defmodule Example.MixProject do
     [
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:ecto, "~> 3.11.0"},
+      {:ecto_sql, "~> 3.11.0"},
       {:jason, "~> 1.4"},
+      {:postgrex, "0.17.5"},
       {:tesla, "~> 1.4"}
     ]
   end
