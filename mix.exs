@@ -15,7 +15,6 @@ defmodule Example.MixProject do
         plt_add_deps: :transitive,
         plt_add_apps: [:ex_unit, :mix]
       ]
-
     ]
   end
 
@@ -36,6 +35,8 @@ defmodule Example.MixProject do
     [
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:jason, "~> 1.4"},
+      {:tesla, "~> 1.4"}
     ]
   end
 
@@ -43,9 +44,9 @@ defmodule Example.MixProject do
     [
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
-      "test": ["ecto.create --quiet", "ecto.migrate", "test"],
+      test: ["ecto.create --quiet", "ecto.migrate", "test"],
       "test.reset": ["ecto.reset --quiet", "test"],
-      "lint": [
+      lint: [
         "compile --warnings-as-errors",
         "format --check-formatted",
         "credo",
