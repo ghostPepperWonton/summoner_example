@@ -11,7 +11,21 @@ defmodule Example.Api do
   def get_summoner_by_name(name) do
     "na1"
     |> client()
-    |> get("/summoner/v4/summoners/by-name/#{name}")
+    |> get("/lol/summoner/v4/summoners/by-name/#{name}")
+  end
+
+  @spec get_summoner_by_puuid(puuid :: String.t()) :: Tesla.Env.result()
+  def get_summoner_by_puuid(puuid) do
+    "na1"
+    |> client()
+    |> get("/lol/summoner/v4/summoners/by-puuid/#{puuid}")
+  end
+
+  @spec get_account_by_puuid(puuid :: String.t()) :: Tesla.Env.result()
+  def get_account_by_puuid(puuid) do
+    "americas"
+    |> client()
+    |> get("/riot/account/v1/accounts/by-puuid/#{puuid}")
   end
 
   @spec get_matches_by_puuid(puuid :: String.t(), count :: integer()) ::
@@ -20,7 +34,7 @@ defmodule Example.Api do
     "americas"
     |> client()
     |> get(
-      "/match/v5/matches/by-puuid/#{puuid}/ids?count=#{Integer.to_string(count)}"
+      "/lol/match/v5/matches/by-puuid/#{puuid}/ids?count=#{Integer.to_string(count)}"
     )
   end
 
@@ -28,12 +42,12 @@ defmodule Example.Api do
   def get_match_details(match_id) do
     "americas"
     |> client()
-    |> get("/match/v5/matches/#{match_id}")
+    |> get("/lol/match/v5/matches/#{match_id}")
   end
 
   defp client(region) do
     Tesla.client([
-      {Tesla.Middleware.BaseUrl, "https://#{region}.api.riotgames.com/lol"},
+      {Tesla.Middleware.BaseUrl, "https://#{region}.api.riotgames.com"},
       {Tesla.Middleware.Headers, [{"X-Riot-Token", token()}]}
     ])
   end
