@@ -5,19 +5,21 @@ defmodule Example.Lol do
 
   alias Example.Api
   alias Example.Repo
+  alias Example.Session
   alias Example.Summoner
 
-  @spec summoner_name(puuid :: String.t()) :: {:ok | :error, String.t()}
-  def summoner_name(puuid) do
+  @spec summoner_name(session :: Session.t(), puuid :: String.t()) ::
+          {:ok | :error, String.t()}
+  def summoner_name(session, puuid) do
     with nil <- Summoner.get_by_puuid(puuid),
          {:ok,
           %Tesla.Env{
             status: 200,
             body: %{"id" => riot_id, "accountId" => account_id}
           }} <-
-           Api.get_summoner_by_puuid(puuid),
+           Api.get_summoner_by_puuid(session, puuid),
          {:ok, %Tesla.Env{status: 200, body: %{"gameName" => name}}} <-
-           Api.get_account_by_puuid(puuid) do
+           Api.get_account_by_puuid(session, puuid) do
       %{riot_id: riot_id, account_id: account_id, puuid: puuid, name: name}
       |> Summoner.new()
       |> Repo.insert()
@@ -32,8 +34,9 @@ defmodule Example.Lol do
     end
   end
 
-  @spec summoner_puuid(name :: String.t()) :: {:ok | :error, String.t()}
-  def summoner_puuid(name) do
+  @spec summoner_puuid(session :: Session.t(), name :: String.t()) ::
+          {:ok | :error, String.t()}
+  def summoner_puuid(session, name) do
     with nil <- Summoner.get_by_name(name),
          {:ok,
           %Tesla.Env{
@@ -43,7 +46,7 @@ defmodule Example.Lol do
               "accountId" => account_id,
               "puuid" => puuid
             }
-          }} <- Api.get_summoner_by_name(name) do
+          }} <- Api.get_summoner_by_name(session, name) do
       %{riot_id: riot_id, account_id: account_id, puuid: puuid, name: name}
       |> Summoner.new()
       |> Repo.insert()
@@ -58,12 +61,16 @@ defmodule Example.Lol do
     end
   end
 
-  @spec recent_matches(name :: String.t(), count :: integer()) ::
+  @spec recent_matches(
+          session :: Session.t(),
+          name :: String.t(),
+          count :: integer()
+        ) ::
           {:ok, list(String.t())} | {:error, String.t()}
-  def recent_matches(name, count \\ 5) do
-    with {:ok, puuid} <- summoner_puuid(name),
+  def recent_matches(session, name, count \\ 5) do
+    with {:ok, puuid} <- summoner_puuid(session, name),
          {:ok, %Tesla.Env{status: 200, body: matches}} when is_list(matches) <-
-           Api.get_matches_by_puuid(puuid, count) do
+           Api.get_matches_by_puuid(session, puuid, count) do
       {:ok, matches}
     else
       {:ok, %Tesla.Env{status: status}} ->
@@ -77,10 +84,10 @@ defmodule Example.Lol do
     end
   end
 
-  @spec match_participants(match_id :: String.t()) ::
+  @spec match_participants(session :: Session.t(), match_id :: String.t()) ::
           {:ok, list(String.t())} | {:error, String.t()}
-  def match_participants(match_id) do
-    case Api.get_match_details(match_id) do
+  def match_participants(session, match_id) do
+    case Api.get_match_details(session, match_id) do
       {:ok,
        %Tesla.Env{
          status: 200,
@@ -90,7 +97,7 @@ defmodule Example.Lol do
         participant_names =
           participant_puuids
           |> Enum.map(fn puuid ->
-            case summoner_name(puuid) do
+            case summoner_name(session, puuid) do
               {:ok, name} -> name
               _error -> nil
             end
@@ -105,17 +112,18 @@ defmodule Example.Lol do
   end
 
   @spec recent_summoner_participants(
+          session :: Session.t(),
           name :: String.t(),
           match_count :: integer()
         ) ::
           {:ok, list(String.t())} | {:error, String.t()}
-  def recent_summoner_participants(name, match_count \\ 5) do
-    case recent_matches(name, match_count) do
+  def recent_summoner_participants(session, name, match_count \\ 5) do
+    case recent_matches(session, name, match_count) do
       {:ok, match_ids} ->
         participants =
           match_ids
           |> Enum.reduce([], fn match_id, acc ->
-            case match_participants(match_id) do
+            case match_participants(session, match_id) do
               {:ok, participants} -> Enum.concat(acc, participants)
               {:error, _message} -> acc
             end

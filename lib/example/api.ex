@@ -5,26 +5,9 @@ defmodule Example.Api do
 
   use Tesla
 
-  plug Tesla.Middleware.JSON
+  alias Example.Session
 
-  @type region ::
-          "br1"
-          | "eun1"
-          | "euw1"
-          | "jp1"
-          | "kr"
-          | "la1"
-          | "la2"
-          | "na1"
-          | "oc1"
-          | "ph2"
-          | "ru"
-          | "sg2"
-          | "th2"
-          | "tr1"
-          | "tw2"
-          | "vn2"
-  @type broad_region :: "americas" | "asia" | "europe" | "sea"
+  plug Tesla.Middleware.JSON
 
   @broad_from_region %{
     "br1" => "americas",
@@ -45,39 +28,39 @@ defmodule Example.Api do
     "vn2" => "sea"
   }
 
-  @spec get_summoner_by_name(region :: region(), name :: String.t()) ::
+  @spec get_summoner_by_name(session :: Session.t(), name :: String.t()) ::
           Tesla.Env.result()
-  def get_summoner_by_name(region, name) do
-    region
+  def get_summoner_by_name(session, name) do
+    session
     |> client()
     |> get("/lol/summoner/v4/summoners/by-name/#{name}")
   end
 
-  @spec get_summoner_by_puuid(region :: region(), puuid :: String.t()) ::
+  @spec get_summoner_by_puuid(session :: Session.t(), puuid :: String.t()) ::
           Tesla.Env.result()
-  def get_summoner_by_puuid(region, puuid) do
-    region
+  def get_summoner_by_puuid(session, puuid) do
+    session
     |> client()
     |> get("/lol/summoner/v4/summoners/by-puuid/#{puuid}")
   end
 
-  @spec get_account_by_puuid(region :: region(), puuid :: String.t()) ::
+  @spec get_account_by_puuid(session :: Session.t(), puuid :: String.t()) ::
           Tesla.Env.result()
-  def get_account_by_puuid(region, puuid) do
-    region
+  def get_account_by_puuid(session, puuid) do
+    session
     |> broad_region_for_region()
     |> client()
     |> get("/riot/account/v1/accounts/by-puuid/#{puuid}")
   end
 
   @spec get_matches_by_puuid(
-          region :: region(),
+          session :: Session.t(),
           puuid :: String.t(),
           count :: integer()
         ) ::
           Tesla.Env.result()
-  def get_matches_by_puuid(region, puuid, count \\ 5) do
-    region
+  def get_matches_by_puuid(session, puuid, count \\ 5) do
+    session
     |> broad_region_for_region()
     |> client()
     |> get(
@@ -85,27 +68,23 @@ defmodule Example.Api do
     )
   end
 
-  @spec get_match_details(region :: region(), match_id :: String.t()) ::
+  @spec get_match_details(session :: Session.t(), match_id :: String.t()) ::
           Tesla.Env.result()
-  def get_match_details(region, match_id) do
-    region
+  def get_match_details(session, match_id) do
+    session
     |> broad_region_for_region()
     |> client()
     |> get("/lol/match/v5/matches/#{match_id}")
   end
 
-  defp client(region) do
+  defp client(%Session{region: region, token: token}) do
     Tesla.client([
       {Tesla.Middleware.BaseUrl, "https://#{region}.api.riotgames.com"},
-      {Tesla.Middleware.Headers, [{"X-Riot-Token", token()}]}
+      {Tesla.Middleware.Headers, [{"X-Riot-Token", token}]}
     ])
   end
 
-  defp token do
-    Application.get_env(:example, :token)
-  end
-
-  defp broad_region_for_region(region) do
-    Map.get(@broad_from_region, region, "americas")
+  defp broad_region_for_region(%Session{region: region} = session) do
+    %Session{session | region: Map.get(@broad_from_region, region, "americas")}
   end
 end
