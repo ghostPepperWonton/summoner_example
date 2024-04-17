@@ -4,9 +4,23 @@ defmodule Example.Lol do
   """
 
   alias Example.Api
+  alias Example.Poll
   alias Example.Repo
   alias Example.Session
   alias Example.Summoner
+
+  @spec watch_summoner(name :: String.t(), for_region :: String.t()) :: %{
+          pid: pid(),
+          summoner: Summoner.t(),
+          session: Session.t()
+        }
+  def watch_summoner(name, for_region \\ "na1") do
+    session = Session.new(for_region)
+    summoner = Summoner.get_by_name(name)
+    {:ok, pid} = Poll.start_link(session, summoner)
+
+    %{pid: pid, summoner: summoner, session: session}
+  end
 
   @spec summoner_name(session :: Session.t(), puuid :: String.t()) ::
           {:ok | :error, String.t()}
@@ -129,6 +143,7 @@ defmodule Example.Lol do
             end
           end)
           |> Enum.uniq()
+          |> IO.inspect()
 
         {:ok, participants}
 
